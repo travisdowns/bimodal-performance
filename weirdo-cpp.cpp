@@ -8,11 +8,11 @@
 
 volatile uint32_t value;
 
-void weirdo_cpp(size_t iters, uint32_t* output) {
+void weirdo_cpp(size_t iters, void* output) {
 
     uint32_t x = value;  // read from global so the zero is kept in a register rather than an immediate
-    uint32_t          *rdx = output;
-    volatile uint32_t *rsi = output;
+    uint32_t          *rdx = (uint32_t*)output;
+    volatile uint32_t *rsi = rdx;
     do {
         *rdx = x;
         *rsi = x;
@@ -21,6 +21,7 @@ void weirdo_cpp(size_t iters, uint32_t* output) {
     } while (--iters > 0);
 }
 
-
+/* always return zero, but hide this here to avoid optimization */
+int zero() { return 0; }
 
 

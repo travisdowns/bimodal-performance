@@ -19,7 +19,7 @@ namespace CycleTimer {
 
 namespace impl {
 
-template <typename CLOCK = std::chrono::steady_clock, size_t ITERS = 10000, size_t TRIES = 11, size_t WARMUP = 1000>
+template <typename CLOCK = std::chrono::steady_clock, size_t ITERS = 10000, size_t TRIES = 11, size_t WARMUP = 100>
 struct Calibration {
     static volatile size_t sink;
 
@@ -44,7 +44,7 @@ struct Calibration {
      * remove measurement overhead.
      */
     HEDLEY_NEVER_INLINE
-    static double getGHzImpl() {
+    static double getGHzImpl(bool print) {
         static_assert(ITERS > 10 && ITERS % 4 == 0, "iters > 10 and multiple of 4 please");
 
         using ns = std::chrono::nanoseconds::rep;
@@ -64,12 +64,12 @@ struct Calibration {
         // return the median value
         std::sort(results.begin(), results.end());
         double ghz = ((double)ITERS / results[TRIES/2]);
-        fprintf(stderr, "Estimated CPU speed: %5.2f GHz\n", ghz);
+        if (print) fprintf(stderr, "Estimated CPU speed: %5.2f GHz\n", ghz);
         return ghz;
     }
 
-    static double getGHz() {
-        static double ghz = getGHzImpl();
+    static double getGHz(bool print = true) {
+        static double ghz = getGHzImpl(print);
         return ghz;
     }
 };
@@ -118,8 +118,8 @@ public:
      * the TimingResult.getCycles()), but may be lengthy, so this method is offfered so that the user can trigger
      * it at a time of their choosing
      */
-    static void init() {
-        TimingResult{0}.getCycles();
+    static void init(bool print) {
+        impl::Calibration<>::getGHz(print);
     }
 
     /* return a TimeResult object representing the current moment in time */
