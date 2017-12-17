@@ -17,7 +17,7 @@ namespace CycleTimer {
 
 namespace impl {
 
-template <typename CLOCK = std::chrono::steady_clock, size_t ITERS = 10000, size_t TRIES = 11, size_t WARMUP = 100>
+template <typename CLOCK = std::chrono::steady_clock, size_t ITERS = 10000, size_t TRIES = 11, size_t WARMUP = 1000>
 struct Calibration {
     static volatile size_t sink;
 
