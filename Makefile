@@ -7,7 +7,7 @@ all: weirdo-main
 weirdo-main.o: weirdo-main.cpp cycle-timer.hpp
 
 weirdo-main: weirdo-main.o weirdo.o weirdo-cpp.o
-	g++ -o $@ $^
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $^
 
 %.o: %.asm
 	$(NASM) -f elf64 -o $@ $<
