@@ -1,6 +1,6 @@
 NASM := yasm
 
-CXXFLAGS += -fmessage-length=0 -Wall -Wextra -std=gnu++11 -g -O1 
+override CXXFLAGS += -fmessage-length=0 -Wall -Wextra -std=gnu++11 -g -O1 
 
 all: weirdo-main
 
