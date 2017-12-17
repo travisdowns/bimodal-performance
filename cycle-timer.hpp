@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <algorithm>
 
+#include "hedley.h"
+
 namespace CycleTimer {
 
 namespace impl {
@@ -25,6 +27,8 @@ struct Calibration {
      * Calibration loop that relies on store throughput being exactly 1 per cycle
      * on all modern x86 chips, and the loop overhead running totally in parallel.
      */
+    HEDLEY_NEVER_INLINE
+    __attribute__((aligned(32)))
     static void store_calibration(size_t iters) {
         do {
             sink = iters;
@@ -39,6 +43,7 @@ struct Calibration {
      * run twice, once with ITERS iterations and once with 2*ITERS, and a delta is used to
      * remove measurement overhead.
      */
+    HEDLEY_NEVER_INLINE
     static double getGHzImpl() {
         static_assert(ITERS > 10 && ITERS % 4 == 0, "iters > 10 and multiple of 4 please");
 
