@@ -34,7 +34,7 @@ ALIGN 32
 store_calibration_asm:
 mov [sink2], rax
 sub rdi, 1
-jnz add_calibration
+jnz store_calibration_asm
 ret
 
 GLOBAL store_calibration_asm2:function
@@ -42,7 +42,7 @@ ALIGN 32
 store_calibration_asm2:
 mov [sink2], rdi
 sub rdi, 1
-jnz add_calibration
+jnz store_calibration_asm2
 ret
 
 section .data
