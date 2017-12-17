@@ -1,11 +1,11 @@
 EXTERN table
 
-GLOBAL weirdolut:function
+GLOBAL weirdo_asm:function
 
 ;; it's weird...
 ; rdi iteration count
 ; rsi output pointer
-weirdolut:
+weirdo_asm:
 
     mov     rdx, rsi
     xor     eax, eax
