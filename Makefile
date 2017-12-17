@@ -4,6 +4,8 @@ CXXFLAGS += -fmessage-length=0 -Wall -Wextra -std=gnu++11 -g -O1
 
 all: weirdo-main
 
+weirdo-main.o: weirdo-main.cpp cycle-timer.hpp
+
 weirdo-main: weirdo-main.o weirdo.o weirdo-cpp.o
 	g++ -o $@ $^
 
