@@ -10,8 +10,16 @@ Test code and hardness weird bimodal performance on Intel Skylake CPU [discussed
     
 ## Running
 
-    ./weirdo-main
+You can run either the C++ or asm versions of the loop. They should have the same beahvior (but if they don't, you should check the generated assembly for the C++ version).
+
+Run the C++ loop:
+
+    ./weirdo-main c++
+
+Run the asm loop:
+
+    ./weirdo-main asm
     
 If you don't see the weird performance on the first run, you can run it repeatedly like (if you're using bash):
 
-    while [ true ]; do sudo taskset -c 2 ./weirdo-main; done
+    while [ true ]; do sudo taskset -c 2 ./weirdo-main asm; done
