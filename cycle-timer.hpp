@@ -13,13 +13,21 @@
 #include <cstdio>
 #include <algorithm>
 
+
 namespace CycleTimer {
 
 namespace impl {
 
+typedef void (cal_f)(size_t iters);
+
+extern "C" cal_f add_calibration;
+extern "C" cal_f store_calibration_asm;
+extern "C" cal_f store_calibration_asm2;
+
 template <typename CLOCK = std::chrono::steady_clock, size_t ITERS = 10000, size_t TRIES = 11, size_t WARMUP = 1000>
 struct Calibration {
     static volatile size_t sink;
+
 
     /**
      * Calibration loop that relies on store throughput being exactly 1 per cycle
@@ -39,7 +47,8 @@ struct Calibration {
      * run twice, once with ITERS iterations and once with 2*ITERS, and a delta is used to
      * remove measurement overhead.
      */
-    static double getGHzImpl() {
+    template <cal_f CAL>
+    static double getGHzImpl(const char* name) {
         static_assert(ITERS > 10 && ITERS % 4 == 0, "iters > 10 and multiple of 4 please");
 
         using ns = std::chrono::nanoseconds::rep;
@@ -48,9 +57,9 @@ struct Calibration {
         for (size_t w = 0; w < WARMUP + 1; w++) {
             for (size_t r = 0; r < TRIES; r++) {
                 auto t0 = CLOCK::now();
-                store_calibration(ITERS);
+                CAL(ITERS);
                 auto t1 = CLOCK::now();
-                store_calibration(ITERS * 2);
+                CAL(ITERS * 2);
                 auto t2 = CLOCK::now();
                 results[r] = std::chrono::duration_cast<std::chrono::nanoseconds>((t2 - t1) - (t1 - t0)).count();
             }
@@ -59,12 +68,19 @@ struct Calibration {
         // return the median value
         std::sort(results.begin(), results.end());
         double ghz = ((double)ITERS / results[TRIES/2]);
-        fprintf(stderr, "Estimated CPU speed: %5.2f GHz\n", ghz);
+        fprintf(stderr, "Estimated CPU speed (%10s): %5.2f GHz\n", name, ghz);
         return ghz;
     }
 
+    static double getGHzAll() {
+        getGHzImpl<store_calibration_asm>("store-asm");
+        getGHzImpl<store_calibration_asm2>("store-asm2");
+        getGHzImpl<add_calibration>("add-asm");
+        return getGHzImpl<store_calibration>("store-c");
+    }
+
     static double getGHz() {
-        static double ghz = getGHzImpl();
+        static double ghz = getGHzAll();
         return ghz;
     }
 };
