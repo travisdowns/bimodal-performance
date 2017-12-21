@@ -19,12 +19,7 @@
 
 bool getBool(const char *var, bool def = false) {
     const char *val = getenv(var);
-    return (val && strcmp(val,"1") == 0) || def;
-}
-
-bool getInt(const char *var, bool def = false) {
-    const char *val = getenv(var);
-    return (val && strcmp(val,"1") == 0) || def;
+    return val ? strcmp(val,"1") == 0 : def;
 }
 
 bool verbose = getBool("W_VERBOSE");
