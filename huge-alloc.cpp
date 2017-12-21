@@ -46,7 +46,7 @@ public:
 #define HUGE_PAGE_MASK ((size_t)-HUGE_PAGE_SIZE)
 
 /* allocate size bytes of storage in a hugepage */
-void *huge_alloc(size_t user_size) {
+void *huge_alloc(size_t user_size, bool print) {
     if (user_size > MAX_HUGE_ALLOC) {
         throw bad_huge_alloc("request exceeds MAX_HUGE_ALLOC, check your math");
     }
@@ -70,7 +70,7 @@ void *huge_alloc(size_t user_size) {
 
     page_info_array  info   = get_info_for_range(aligned_p, aligned_p + user_size);
     flag_count fcount = get_flag_count(info, KPF_THP);
-    fprintf(stderr, "hugepage ratio %4.3f (available %4.3f) for allocation of size %zu\n",
+    if (print) fprintf(stderr, "hugepage ratio %4.3f (available %4.3f) for allocation of size %zu\n",
             (double)fcount.pages_set/fcount.pages_available,
             (double)fcount.pages_available/fcount.pages_total,
             user_size);

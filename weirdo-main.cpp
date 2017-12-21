@@ -17,29 +17,40 @@
 #include "cycle-timer.hpp"
 #include "huge-alloc.hpp"
 
-bool verbose = true;
-bool summary = false;
-bool domax   = false;
-bool color   = true;
-const int cpu = 1;
+bool getBool(const char *var, bool def = false) {
+    const char *val = getenv(var);
+    return (val && strcmp(val,"1") == 0) || def;
+}
+
+bool getInt(const char *var, bool def = false) {
+    const char *val = getenv(var);
+    return (val && strcmp(val,"1") == 0) || def;
+}
+
+bool verbose = getBool("W_VERBOSE");
+bool summary = getBool("W_SUMMARY");
+bool domax   = getBool("W_MAX");
+bool color   = getBool("W_COLOR", true);
+int cpu = 1;
 
 typedef void (store_function)(size_t iters, void* output);
 extern "C" {
-store_function weirdo_asm;
-store_function weirdo_read;
+store_function weirdo_write;
+store_function weirdo_write_pf;
+store_function weirdo_read1;
+store_function weirdo_read2;
 }
 store_function weirdo_cpp;
 
 void *alloc(size_t size) {
     size_t grossed_up = size * 2 + 1000;
 
-
-    void *p;
-    assert(posix_memalign(&p, 2 * 1024 * 1024, grossed_up) == 0);
-    madvise(p, 2 * 1024 * 1024, MADV_HUGEPAGE);
-    return p;
+//    void *p;
+//    assert(posix_memalign(&p, 2 * 1024 * 1024, grossed_up) == 0);
+//    madvise(p, 2 * 1024 * 1024, MADV_HUGEPAGE);
+//    return p;
 //    return malloc(size);
-//    return huge_alloc(grossed_up);
+    return huge_alloc(grossed_up, !summary);
 }
 
 void pinToCpu(int cpu) {
@@ -109,22 +120,24 @@ int main(int argc, char** argv) {
     }
     store_function *function = nullptr;
     if (argc == 2) {
-        if      (strcmp(argv[1],"c++")  == 0) function = weirdo_cpp;
-        else if (strcmp(argv[1],"asm")  == 0) function = weirdo_asm;
-        else if (strcmp(argv[1],"read") == 0) function = weirdo_read;
+        if      (strcmp(argv[1],"c++")  == 0)   function = weirdo_cpp;
+        else if (strcmp(argv[1],"asm")  == 0)   function = weirdo_write;
+        else if (strcmp(argv[1],"asm_pf") == 0) function = weirdo_write_pf;
+        else if (strcmp(argv[1],"read1") == 0)  function = weirdo_read1;
+        else if (strcmp(argv[1],"read2") == 0)  function = weirdo_read2;
     }
 
     if (!function) {
         usageError();
     }
 
-//    pinToCpu(cpu);
+    pinToCpu(cpu);
 //    fprintf(stderr, "pinned to cpu %d\n", cpu);
 
     cycleclock::init(!summary);
 
     size_t repeat_count = 10;
-    size_t iters = 10000;
+    size_t iters = 2000;
 
     size_t stride       = STRIDE;
     size_t output_size  = 64 * 1024;  // in bytes
