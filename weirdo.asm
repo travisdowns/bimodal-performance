@@ -48,8 +48,9 @@ GLOBAL weirdo_asm:function,weirdo_read:function
 %macro unrollA 1
 %assign off 0
 %rep %1
-    mov     DWORD [rdx + off + FIRSTO], eax
-    mov     DWORD [rdx + off + SECONDO + 48], eax
+    mov     DWORD [rdx + off], eax
+    mov     DWORD [rsp - 8], eax
+    ; mov     DWORD [rdx + off + SECONDO + 48], eax
     ;mov     QWORD [rdx + off + 2], rax
     ;vmovups  [rdx + off], ymm0
     ;vmovups  [rdx + off + 32], ymm0
@@ -93,7 +94,7 @@ align 16
 ;    add     rcx, UNROLL * STRIDE
     add     rdx, UNROLL * STRIDE
     ;mov     r8, [rdx + FIRSTO + SECONDO]
-    PREFETCHT0 [rdx + FIRSTO + SECONDO]
+    PREFETCHT0 [rdx + 128]
 
     sub    rdi,1
     jne    .top
