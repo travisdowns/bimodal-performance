@@ -63,7 +63,13 @@ void pinToCpu(int cpu) {
 int zero();
 
 void usageError() {
-    fprintf(stderr, "Usage:\n\tweirdo-main c++ [summary]\n\tweirdo-main asm [summary]\n");
+    fprintf(stderr,
+            "Usage:\n"
+            "\tweirdo-main c++ [summary]\n"
+            "\tweirdo-main asm [summary]\n"
+            "\tweirdo-main read1 [summary]\n"
+            "\tweirdo-main read2 [summary]\n"
+            );
     exit(EXIT_FAILURE);
 }
 
