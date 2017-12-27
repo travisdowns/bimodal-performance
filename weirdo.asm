@@ -63,6 +63,46 @@ align 16
 write_func weirdo_write, times 0 nop
 write_func weirdo_write_pf, PREFETCHT0 [rdx + PF_DIST]
 
+GLOBAL weirdo_write2:function
+weirdo_write2:
+    mov     rcx, rsi
+    mov     rdx, rsi
+    mov     eax, 1
+
+    shr     rdi, UNROLL_SHIFT
+
+align 16
+.top:
+    mov     DWORD [rdx], eax
+    mov     DWORD [rdx + 15872], eax
+    mov     DWORD [rdx + 31744], eax
+    mov     DWORD [rdx + 47616], eax
+
+    add     rdx, UNROLL * STRIDE
+
+    sub    rdi,1
+    jne    .top
+
+    ret
+
+GLOBAL weirdo_write3:function
+weirdo_write3:
+    mov     rcx, rsi
+    mov     rdx, rsi
+    mov     eax, 1
+
+align 16
+.top:
+    mov     DWORD [rdx], eax
+    mov     BYTE  [rcx],  al
+
+    add     rdx, UNROLL * STRIDE
+    add     rcx, 1
+    sub    rdi,1
+    jne    .top
+
+    ret
+
 weirdo_read1:
     mov     rdx, rsi
     mov     rax, 0

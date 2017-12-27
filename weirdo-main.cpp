@@ -31,6 +31,8 @@ int cpu = 1;
 typedef void (store_function)(size_t iters, void* output);
 extern "C" {
 store_function weirdo_write;
+store_function weirdo_write2;  // two streams both in L2
+store_function weirdo_write3;  // L2 stream + moving L1 (stride 1) stream
 store_function weirdo_write_pf;
 store_function weirdo_read1;
 store_function weirdo_read2;
@@ -65,10 +67,11 @@ int zero();
 void usageError() {
     fprintf(stderr,
             "Usage:\n"
-            "\tweirdo-main c++ [summary]\n"
-            "\tweirdo-main asm [summary]\n"
-            "\tweirdo-main read1 [summary]\n"
-            "\tweirdo-main read2 [summary]\n"
+            "\tweirdo-main c++    [summary]\n"
+            "\tweirdo-main asm    [summary]\n"
+            "\tweirdo-main write2 [summary]\n"
+            "\tweirdo-main read1  [summary]\n"
+            "\tweirdo-main read2  [summary]\n"
             );
     exit(EXIT_FAILURE);
 }
@@ -123,6 +126,8 @@ int main(int argc, char** argv) {
     if (argc == 2) {
         if      (strcmp(argv[1],"c++")  == 0)   function = weirdo_cpp;
         else if (strcmp(argv[1],"asm")  == 0)   function = weirdo_write;
+        else if (strcmp(argv[1],"write2") == 0) function = weirdo_write2;
+        else if (strcmp(argv[1],"write3") == 0) function = weirdo_write3;
         else if (strcmp(argv[1],"asm_pf") == 0) function = weirdo_write_pf;
         else if (strcmp(argv[1],"read1") == 0)  function = weirdo_read1;
         else if (strcmp(argv[1],"read2") == 0)  function = weirdo_read2;
@@ -138,7 +143,7 @@ int main(int argc, char** argv) {
     cycleclock::init(!summary);
 
     size_t repeat_count = 10;
-    size_t iters = 2000;
+    size_t iters = 5000;
 
     size_t stride       = STRIDE;
     size_t output_size  = 64 * 1024;  // in bytes
