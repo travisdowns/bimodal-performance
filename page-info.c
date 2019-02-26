@@ -62,8 +62,8 @@ const flag kpageflag_defs[] = {
         FLAG_SHOW(KSM          )
         FLAG_SHOW(THP          )
         FLAG_SHOW(BALLOON      )
-        FLAG_SHOW(ZERO_PAGE    )
-        FLAG_SHOW(IDLE         )
+        // FLAG_SHOW(ZERO_PAGE    )
+        // FLAG_SHOW(IDLE         )
 
         { -1, 0, false }  // sentinel
 };
