@@ -29,24 +29,39 @@ bool color   = getBool("W_COLOR", true);
 int cpu = 1;
 
 typedef void (store_function)(size_t iters, void* output);
+
+struct func_descriptor {
+    const char *name;
+    store_function *f;
+    const char *desc;
+};
+
+
 extern "C" {
 store_function weirdo_write;
-store_function weirdo_write2;  // two streams both in L2
-store_function weirdo_write3;  // L2 stream + moving L1 (stride 1) stream
+store_function weirdo_write2;
+store_function weirdo_write3; 
 store_function weirdo_write_pf;
 store_function weirdo_read1;
 store_function weirdo_read2;
 }
+
 store_function weirdo_cpp;
+
+const func_descriptor all_funcs[] = {
+        { "c++"    , weirdo_cpp     , "c++ version of fixed L1 + 16-stride L2 writes" },
+        { "asm"    , weirdo_write   , "64-bit stride interleaved 2xL2 accesses"       },
+        { "write2" , weirdo_write2  , "two streams both in L2"                        },
+        { "write3" , weirdo_write3  , "L2 stream + moving L1 (stride 1) stream"       },
+        { "asm_pf" , weirdo_write_pf, "like asm, but with prefetching"                },
+        { "read1"  , weirdo_read1   , "read1"                                         },
+        { "read2"  , weirdo_read2   , "read2"                                         },
+        { nullptr, nullptr, nullptr }  // sentinel
+};
 
 void *alloc(size_t size) {
     size_t grossed_up = size * 2 + 1000;
 
-//    void *p;
-//    assert(posix_memalign(&p, 2 * 1024 * 1024, grossed_up) == 0);
-//    madvise(p, 2 * 1024 * 1024, MADV_HUGEPAGE);
-//    return p;
-//    return malloc(size);
     return huge_alloc(grossed_up, !summary);
 }
 
@@ -67,31 +82,23 @@ int zero();
 void usageError() {
     fprintf(stderr,
             "Usage:\n"
-            "\tweirdo-main c++    [summary]\n"
-            "\tweirdo-main asm    [summary]\n"
-            "\tweirdo-main write2 [summary]\n"
-            "\tweirdo-main read1  [summary]\n"
-            "\tweirdo-main read2  [summary]\n"
+            "\tweirdo-main TEST_NAME [summary]\n"
+            "\n TEST_NAME is one of:\n\n"
             );
+
+    for (const func_descriptor* desc = all_funcs; desc->name; desc++) {
+        printf(" %s\n\t%s\n", desc->name, desc->desc);
+    }
     exit(EXIT_FAILURE);
 }
 
-const char *   RED = "\033[0;31m";
-const char * GREEN = "\033[0;32m";
+const char *RED    = "\033[0;31m";
+const char *GREEN  = "\033[0;32m";
 const char *YELLOW = "\033[0;33m";
 const char *MAGENT = "\033[0;95m";
+const char *NC     = "\033[0m";
 
-const char *NC="\033[0m";
 
-//  // suitable for 2 stores
-//const char* selectColor(double v) {
-//    if (v <= 2.4) return NC;
-//    if (v <= 3.35) return YELLOW;
-//    if (v <= 3.6) return RED;
-//    return MAGENT;
-//}
-
-// suitable for 3 stores
 const char* selectColor(double v) {
     if (color) {
         // suitable for 2 stores - stride 64
@@ -100,20 +107,36 @@ const char* selectColor(double v) {
         if (v <= 8) return YELLOW;
         if (v <= 10) return RED;
         return MAGENT;
-//        if (v <= 4.5) return NC;
-//        if (v <= 5.5) return GREEN;
-//        if (v <= 6.3) return YELLOW;
-//        if (v <= 10)  return RED;
-//        return MAGENT;
+        /*
+        // suitable for 3 stores
+        if (v <= 4.5) return NC;
+        if (v <= 5.5) return GREEN;
+        if (v <= 6.3) return YELLOW;
+        if (v <= 10)  return RED;
+        return MAGENT;
+        */
     }
     return "";
 }
 
-
 int main(int argc, char** argv) {
     using cycleclock = CycleTimer::ClockTimerHiRes;
 
-    if (argc == 3) {
+    const char* fname = argc >= 2 ? argv[1] : "asm";
+    const func_descriptor *test = nullptr;
+    for (const func_descriptor* desc = all_funcs; desc->name; desc++) {
+        if (strcmp(desc->name, fname) == 0) {
+            test = desc;
+            break;
+        }
+    }
+
+    if (!test) {
+        fprintf(stderr, "Bad test name: %s", fname);
+        usageError();
+    }
+    
+    if (argc >= 3) {
         if (strcmp(argv[2],"summary")) {
             fprintf(stderr, "Bad second arg: '%s'", argv[2]);
             usageError();
@@ -122,23 +145,15 @@ int main(int argc, char** argv) {
         verbose = false;
         summary = true;
     }
-    store_function *function = nullptr;
-    if (argc == 2) {
-        if      (strcmp(argv[1],"c++")  == 0)   function = weirdo_cpp;
-        else if (strcmp(argv[1],"asm")  == 0)   function = weirdo_write;
-        else if (strcmp(argv[1],"write2") == 0) function = weirdo_write2;
-        else if (strcmp(argv[1],"write3") == 0) function = weirdo_write3;
-        else if (strcmp(argv[1],"asm_pf") == 0) function = weirdo_write_pf;
-        else if (strcmp(argv[1],"read1") == 0)  function = weirdo_read1;
-        else if (strcmp(argv[1],"read2") == 0)  function = weirdo_read2;
-    }
 
-    if (!function) {
-        usageError();
+    if (argc > 3) {
+        fprintf(stderr, "Extraneous arguments ignored");
     }
 
     pinToCpu(cpu);
-//    fprintf(stderr, "pinned to cpu %d\n", cpu);
+    if (verbose)  fprintf(stderr, "pinned to cpu %d\n", cpu);
+
+    fprintf(stderr, "Running test %s : %s\n", test->name, test->desc);
 
     cycleclock::init(!summary);
 
@@ -162,7 +177,7 @@ int main(int argc, char** argv) {
         auto start_cycles = cycleclock::now();
         auto start_cpu    = clock();
         for (int c = iters; c-- > 0;) {
-            function(kernel_loops, output);
+            test->f(kernel_loops, output);
         }
         auto end_cycles = cycleclock::now();
         auto end_cpu    = clock();

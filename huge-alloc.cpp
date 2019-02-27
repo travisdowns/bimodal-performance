@@ -70,10 +70,16 @@ void *huge_alloc(size_t user_size, bool print) {
 
     page_info_array  info   = get_info_for_range(aligned_p, aligned_p + user_size);
     flag_count fcount = get_flag_count(info, KPF_THP);
-    if (print) fprintf(stderr, "hugepage ratio %4.3f (available %4.3f) for allocation of size %zu\n",
-            (double)fcount.pages_set/fcount.pages_available,
-            (double)fcount.pages_available/fcount.pages_total,
-            user_size);
+    if (print) {
+        if (user_size > 0 && fcount.pages_available == 0) {
+            fprintf(stderr, "failed to get any huge page info - probably you need to run as root\n");
+        } else {
+            fprintf(stderr, "hugepage ratio %4.3f (available %4.3f) for allocation of size %zu\n",
+                (double)fcount.pages_set/fcount.pages_available,
+                (double)fcount.pages_available/fcount.pages_total,
+                user_size);
+        }
+    }
 
     assert(alloc_map.find(aligned_p) == alloc_map.end());
     alloc_map.emplace(aligned_p, alloc_info{user_size, mmap_size, mmap_p});
