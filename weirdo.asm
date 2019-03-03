@@ -203,7 +203,7 @@ rand_asm:
 %macro asm2_body 0
     and     rax, r10
     mov     dword [rsi + rax], 0
-    ;mov     dword [rcx + r8],  1
+    mov     dword [rcx + r8],  1
     add     rax, 64
 %endmacro
 
@@ -224,7 +224,7 @@ rand_asm2:
     %rep UNROLL2
     asm2_body
     %endrep
-    sfence
+    ;sfence
     sub     rdi, UNROLL2                              
     jns     .top                               
     ret       
