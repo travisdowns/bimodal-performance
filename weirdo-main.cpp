@@ -46,6 +46,9 @@ struct func_descriptor {
     // expected number of L1 and L2 hits (L2 hits implying L1 misses)
     int l1_hits;
     int l2_hits;
+    // a multiplier applied to the number of "kernel loops" (accesses the test is
+    // request to perform), useful for tests that have sigifnicant startup overhead
+    int loop_mul;
 };
 
 
@@ -64,21 +67,26 @@ store_function rand_asm2;
 
 store_function weirdo_cpp;
 store_function rand_writes;
+store_function populate_set;
 
-const func_descriptor all_funcs[] = {
-        { "c++"      , weirdo_cpp     , "c++ version of fixed L1 + 16-stride L2 writes", 1, 1 },
-        { "asm"      , weirdo_write   , "64-bit stride interleaved 2xL2 accesses"      , 0, 2 },
-        { "write2"   , weirdo_write2  , "two streams both in L2"                       , 0, 2 },
-        { "write3"   , weirdo_write3  , "L2 stream + L1 (stride 1) stream"             , 1, 1 },
-        { "write4"   , weirdo_write4  , "L2 stream + fixed L1"                         , 1, 1 },
-        { "asm_pf"   , weirdo_write_pf, "like asm, but with prefetching"               , 0, 2 },
-        { "read1"    , weirdo_read1   , "read1"                                        , 0, 0 },
-        { "read2"    , weirdo_read2   , "read2"                                        , 0, 0 },
-        { "linear"   , linear         , "single stream of strided reads"               , 0, 1 },
-        { "rand"     , rand_writes    , "C++ random writes"                            , 1, 1 },
-        { "rand-asm" , rand_asm       , "asm random writes"                            , 1, 1 },
-        { "rand-asm2", rand_asm2      , "asm random writes2"                           , 1, 1 },
-        { nullptr, nullptr, nullptr, 0, 0 }  // sentinel
+//                                                                                       /---------- l1_hits
+//                                                                                       |  /------- l2_hits
+//                                                                                       |  |   /--- loop_mul
+const func_descriptor all_funcs[] = {   //                                               v  v   v
+        { "c++"      , weirdo_cpp     , "c++ version of fixed L1 + 16-stride L2 writes", 1, 1,  1 },
+        { "asm"      , weirdo_write   , "64-bit stride interleaved 2xL2 accesses"      , 0, 2,  1 },
+        { "write2"   , weirdo_write2  , "two streams both in L2"                       , 0, 2,  1 },
+        { "write3"   , weirdo_write3  , "L2 stream + L1 (stride 1) stream"             , 1, 1,  1 },
+        { "write4"   , weirdo_write4  , "L2 stream + fixed L1"                         , 1, 1,  1 },
+        { "asm_pf"   , weirdo_write_pf, "like asm, but with prefetching"               , 0, 2,  1 },
+        { "read1"    , weirdo_read1   , "read1"                                        , 0, 0,  1 },
+        { "read2"    , weirdo_read2   , "read2"                                        , 0, 0,  1 },
+        { "linear"   , linear         , "single stream of strided reads"               , 0, 1,  1 },
+        { "rand"     , rand_writes    , "C++ random writes"                            , 1, 1,  1 },
+        { "rand-asm" , rand_asm       , "asm random writes"                            , 1, 1,  1 },
+        { "rand-asm2", rand_asm2      , "asm random writes2"                           , 1, 1,  1 },
+        { "pop-set"  , populate_set   , "pop-set: writes to 2 sets"                    , 1, 1, 20 },
+        { nullptr, nullptr, nullptr, 0, 0, 0 }  // sentinel
 };
 
 void *alloc(size_t size) {
@@ -190,7 +198,7 @@ int main(int argc, char** argv) {
     size_t repeat_count = 10;
     size_t iters = 5000;
     size_t output_size  = region_kib * 1024;  // in bytes
-    size_t kernel_loops = output_size / (STRIDE ? STRIDE : 1);
+    size_t kernel_loops = output_size / (STRIDE ? STRIDE : 1) * test->loop_mul;
 
     // set up the dedicated flag, literal and match offset buffers for the helper test
     void *output = alloc(output_size * 2);
