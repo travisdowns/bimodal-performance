@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cinttypes>
 #include <cstring>
+#include <vector>
 
 #include "opt-control.h"
 #include "huge-alloc.hpp"
