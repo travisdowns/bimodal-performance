@@ -1,0 +1,5 @@
+/.*
+!.gitignore
+*.o
+weirdo-main
+*.log
