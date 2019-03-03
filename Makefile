@@ -3,7 +3,7 @@ NASM := nasm
 STRIDE := 64
 ASM_FLAGS := -DFIRSTO=64 -DSECONDO=0
 
-override CXXFLAGS += -fmessage-length=0 -Wall -Wextra -std=gnu++11 -g -O1 -DSTRIDE=${STRIDE}
+override CXXFLAGS += -fmessage-length=0 -Wall -Wextra -std=gnu++11 -g -O2 -DSTRIDE=${STRIDE} -march=haswell
 LDFLAGS = -use-ld=gold
 
 all: weirdo-main

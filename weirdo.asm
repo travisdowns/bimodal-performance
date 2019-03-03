@@ -94,12 +94,47 @@ weirdo_write3:
 align 16
 .top:
     mov     DWORD [rdx], eax
-    mov     BYTE  [rcx],  al
 
     add     rdx, UNROLL * STRIDE
     add     rcx, 1
     sub    rdi,1
     jne    .top
+
+    ret
+
+; this guy writes to alternately to L1 and L2, with the L1 location fixed and
+; unmoving
+GLOBAL weirdo_write4:function
+weirdo_write4:
+    mov     rcx, rsi
+    mov     rdx, rsi
+    mov     eax, 1
+
+align 16
+.top:
+    mov     DWORD [rdx], eax
+    mov     DWORD [rcx], eax
+
+    add     rdx, STRIDE
+    sub     rdi,1
+    jne     .top
+
+    ret
+
+; no interleaving at all, only a single STRIDEd stream of 32-bit writes
+GLOBAL linear:function
+linear:
+    mov     rcx, rsi
+    mov     rdx, rsi
+    mov     eax, 1
+
+align 16
+.top:
+    mov     DWORD [rdx], eax
+
+    add     rdx, STRIDE
+    sub     rdi,1
+    jne     .top
 
     ret
 
@@ -137,3 +172,63 @@ align 16
 
     ret
 
+GLOBAL rand_asm:FUNCTION
+rand_asm:
+    mov     rax, rdi                            
+    shl     rax, 6                              
+    blsr    rdx, rax                            
+    test    rdx, rdx                            
+    jnz     bad_size                           
+    mov     r8d, 0               
+    shr     rax, 2                              
+    mov     ecx, 1235                           
+    mov     r9, qword 5851F42D4C957F2DH          
+    lea     r10d, [rax-1H]                      
+                                             
+.top:
+    mov     rdx, rcx                        
+    imul    rcx, r9                             
+    and     rdx, r10                            
+    mov     dword [rsi + rdx*4],    r8d              
+    mov     dword [rsi + rdx*4-64], r8d          
+    sub     rdi, 1                              
+    jnz     .top                               
+    ret                                         
+
+
+%ifndef UNROLL2
+%define UNROLL2 1
+%endif
+
+%macro asm2_body 0
+    and     rax, r10
+    mov     dword [rsi + rax], 0
+    ;mov     dword [rcx + r8],  1
+    add     rax, 64
+%endmacro
+
+GLOBAL rand_asm2:FUNCTION
+rand_asm2:
+    mov     rcx, rsi
+    add     rsi, 4096
+    mov     rax, rdi                            
+    shl     rax, 6                              
+    blsr    rdx, rax                            
+    test    rdx, rdx                            
+    jnz     bad_size                           
+    lea     r10d, [rax - 1]
+    mov     eax, 0
+    mov     edx, 0
+
+.top:
+    %rep UNROLL2
+    asm2_body
+    %endrep
+    sfence
+    sub     rdi, UNROLL2                              
+    jns     .top                               
+    ret       
+
+
+bad_size: ; size not a power of two
+ud2
