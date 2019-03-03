@@ -17,6 +17,7 @@
 #include "cycle-timer.hpp"
 #include "huge-alloc.hpp"
 
+#include <emmintrin.h>
 
 int getenv_int(const char *var, int def) {
     const char *val = getenv(var);
