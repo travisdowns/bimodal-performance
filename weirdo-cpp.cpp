@@ -88,7 +88,7 @@ public:
         used = allocate();
         // you'd hope that zero-init for arrays would compile to the same thing, but it doesn't
         // it uses ARRAY_SIZE single-byte stores in a loop :(
-        std::memset(used, 0, ARRAY_SIZE);
+        //std::memset(used, 0, ARRAY_SIZE);
         // printf("set size %d\n", ARRAY_SIZE);
     }
 
@@ -119,7 +119,7 @@ template <int span, int max>
 std::vector<unsigned char*> approximate_set<span, max>::alloc_cache;
 
 void populate_set(size_t iters, void *) {
-    approximate_set<1, 1 << 20> s1;
+    approximate_set<1, 1 << 21> s1;
     approximate_set<1, 1 << 12> s2;
     pcg32_fast rng;
     do {
@@ -128,6 +128,7 @@ void populate_set(size_t iters, void *) {
         s2.accept(val);
     } while (--iters != 0);
     sink_ptr(s1.array());
+    sink_ptr(s2.array());
 }
 
 int countol(approximate_set<1,2> &s) {
