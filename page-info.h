@@ -10,6 +10,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     /* page frame number: if present, the physical frame for the page */
     uint64_t pfn;
@@ -33,7 +37,7 @@ typedef struct {
  * Information for a number of virtually consecutive pages.
  */
 typedef struct {
-    /* how many pages_info are structures are in the array pointed to by info */
+    /* how many page_info structures are in the array pointed to by info */
     size_t num_pages;
 
     /* pointer to the array of page_info structures */
@@ -50,7 +54,7 @@ typedef struct {
 
     /* the total number of pages examined, which may be greater than pages_available if
      * the flag value could not be obtained for some pages (usually because the pfn is not available
-     * since the page is not yet present or because running as non-root, or
+     * since the page is not yet present or because running as non-root.
      */
     size_t pages_total;
 
@@ -64,7 +68,8 @@ typedef struct {
  * effectively giving you a ratio, so you can say "80% of the pages for this allocation are backed by
  * huge pages" or whatever.
  *
- * The flags *must* come from kpageflags (not /proc/pid/pagemane) and are delcared in linux/kernel-page-flags.h.
+ * The flags *must* come from kpageflags (these are not the same as those in /proc/pid/pagemap) and
+ * are declared in linux/kernel-page-flags.h.
  *
  * Ideally, the flag information is available for all the pages in the range, so you can
  * say something about the entire range, but this is often not the case because (a) flags
@@ -140,5 +145,8 @@ page_info_array get_info_for_range(void *start, void *end);
  */
 void free_info_array(page_info_array infos);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PAGE_INFO_H_ */
