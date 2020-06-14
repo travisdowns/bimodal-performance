@@ -174,26 +174,26 @@ align 16
 
 GLOBAL rand_asm:FUNCTION
 rand_asm:
-    mov     rax, rdi                            
-    shl     rax, 6                              
-    blsr    rdx, rax                            
-    test    rdx, rdx                            
-    jnz     bad_size                           
-    mov     r8d, 0               
-    shr     rax, 2                              
-    mov     ecx, 1235                           
-    mov     r9, qword 5851F42D4C957F2DH          
-    lea     r10d, [rax-1H]                      
-                                             
+    mov     rax, rdi
+    shl     rax, 6
+    blsr    rdx, rax
+    test    rdx, rdx
+    jnz     bad_size
+    mov     r8d, 0
+    shr     rax, 2
+    mov     ecx, 1235
+    mov     r9, qword 5851F42D4C957F2DH
+    lea     r10d, [rax-1H]
+
 .top:
-    mov     rdx, rcx                        
-    imul    rcx, r9                             
-    and     rdx, r10                            
-    mov     dword [rsi + rdx*4],    r8d              
-    mov     dword [rsi + rdx*4-64], r8d          
-    sub     rdi, 1                              
-    jnz     .top                               
-    ret                                         
+    mov     rdx, rcx
+    imul    rcx, r9
+    and     rdx, r10
+    mov     dword [rsi + rdx*4],    r8d
+    mov     dword [rsi + rdx*4-64], r8d
+    sub     rdi, 1
+    jnz     .top
+    ret
 
 
 %ifndef UNROLL2
@@ -211,11 +211,11 @@ GLOBAL rand_asm2:FUNCTION
 rand_asm2:
     mov     rcx, rsi
     add     rsi, 4096
-    mov     rax, rdi                            
-    shl     rax, 6                              
-    blsr    rdx, rax                            
-    test    rdx, rdx                            
-    jnz     bad_size                           
+    mov     rax, rdi
+    shl     rax, 6
+    blsr    rdx, rax
+    test    rdx, rdx
+    jnz     bad_size
     lea     r10d, [rax - 1]
     mov     eax, 0
     mov     edx, 0
@@ -225,9 +225,41 @@ rand_asm2:
     asm2_body
     %endrep
     ;sfence
-    sub     rdi, UNROLL2                              
-    jns     .top                               
-    ret       
+    sub     rdi, UNROLL2
+    jns     .top
+    ret
+
+
+; %1 name
+; %2 - %5 offsets for writes 1 to 4
+%macro make_aabb 5
+GLOBAL %1:function
+%1:
+    mov     rcx, rsi
+    mov     rdx, rsi
+    mov     eax, 1
+
+    shr     rdi, 1
+
+    jmp     .top
+
+align 64
+.top:
+    mov     DWORD [rdx + %2], eax
+    mov     DWORD [rdx + %3], eax
+    mov     DWORD [rdx + %4], eax
+    mov     DWORD [rdx + %5], eax
+
+    add     rdx, 128
+
+    sub    rdi,1
+    jne    .top
+
+    ret
+%endmacro
+
+make_aabb write_aabb,0,32,64,96
+make_aabb write_abab,0,64,32,96
 
 
 bad_size: ; size not a power of two

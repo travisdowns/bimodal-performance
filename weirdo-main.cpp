@@ -56,7 +56,7 @@ struct func_descriptor {
 extern "C" {
 store_function weirdo_write;
 store_function weirdo_write2;
-store_function weirdo_write3; 
+store_function weirdo_write3;
 store_function weirdo_write4;
 store_function weirdo_write_pf;
 store_function weirdo_read1;
@@ -64,6 +64,8 @@ store_function weirdo_read2;
 store_function linear;
 store_function rand_asm;
 store_function rand_asm2;
+store_function write_aabb;
+store_function write_abab;
 }
 
 store_function weirdo_cpp;
@@ -74,19 +76,21 @@ store_function populate_set;
 //                                                                                       |  /------- l2_hits
 //                                                                                       |  |   /--- loop_mul
 const func_descriptor all_funcs[] = {   //                                               v  v   v
-        { "c++"      , weirdo_cpp     , "c++ version of fixed L1 + 16-stride L2 writes", 1, 1,  1 },
-        { "asm"      , weirdo_write   , "64-bit stride interleaved 2xL2 accesses"      , 0, 2,  1 },
-        { "write2"   , weirdo_write2  , "two streams both in L2"                       , 0, 2,  1 },
-        { "write3"   , weirdo_write3  , "L2 stream + L1 (stride 1) stream"             , 1, 1,  1 },
-        { "write4"   , weirdo_write4  , "L2 stream + fixed L1"                         , 1, 1,  1 },
-        { "asm_pf"   , weirdo_write_pf, "like asm, but with prefetching"               , 0, 2,  1 },
-        { "read1"    , weirdo_read1   , "read1"                                        , 0, 0,  1 },
-        { "read2"    , weirdo_read2   , "read2"                                        , 0, 0,  1 },
-        { "linear"   , linear         , "single stream of strided reads"               , 0, 1,  1 },
-        { "rand"     , rand_writes    , "C++ random writes"                            , 1, 1,  1 },
-        { "rand-asm" , rand_asm       , "asm random writes"                            , 1, 1,  1 },
-        { "rand-asm2", rand_asm2      , "asm random writes2"                           , 1, 1,  1 },
-        { "pop-set"  , populate_set   , "pop-set: writes to 2 sets"                    , 1, 1, 20 },
+        { "c++"       , weirdo_cpp     , "c++ version of fixed L1 + 16-stride L2 writes", 1, 1,  1 },
+        { "asm"       , weirdo_write   , "64-bit stride interleaved 2xL2 accesses"      , 0, 2,  1 },
+        { "write2"    , weirdo_write2  , "two streams both in L2"                       , 0, 2,  1 },
+        { "write3"    , weirdo_write3  , "Single L2 stream"                             , 0, 1,  1 },
+        { "write4"    , weirdo_write4  , "L2 stream + fixed L1"                         , 1, 1,  1 },
+        { "asm_pf"    , weirdo_write_pf, "like asm, but with prefetching"               , 0, 2,  1 },
+        { "read1"     , weirdo_read1   , "read1"                                        , 0, 0,  1 },
+        { "read2"     , weirdo_read2   , "read2"                                        , 0, 0,  1 },
+        { "linear"    , linear         , "single stream of strided reads"               , 0, 1,  1 },
+        { "rand"      , rand_writes    , "C++ random writes"                            , 1, 1,  1 },
+        { "rand-asm"  , rand_asm       , "asm random writes"                            , 1, 1,  1 },
+        { "rand-asm2" , rand_asm2      , "asm random writes2"                           , 1, 1,  1 },
+        { "write_aabb", write_aabb     , "32-byte stride L2 writes AABB pattern"        , 1, 1,  1 },
+        { "write_abab", write_abab     , "32-byte stride L2 writes ABAB pattern"        , 1, 1,  1 },
+        { "pop-set"   , populate_set   , "pop-set: writes to 2 sets"                    , 1, 1, 20 },
         { nullptr, nullptr, nullptr, 0, 0, 0 }  // sentinel
 };
 
@@ -163,7 +167,7 @@ int main(int argc, char** argv) {
     using cycleclock = CycleTimer::ClockTimerHiRes;
 
     if (argc >= 3) {
-        fprintf(stderr, "Bad second arg: '%s'", argv[2]);
+        fprintf(stderr, "Unexpected second argument: '%s'\n", argv[2]);
         usageError();
     }
 
@@ -194,10 +198,10 @@ int main(int argc, char** argv) {
 
     cycleclock::init(!summary);
 
-    // run the whole test repeat_count times, each of which calls the test function iters times, 
+    // run the whole test repeat_count times, each of which calls the test function iters times,
     // and each test function should loop kernel_loops times (with 1 or 2 stores), or equivalent with unrolling
     size_t repeat_count = 10;
-    size_t iters = 5000;
+    size_t iters = 500;
     size_t output_size  = region_kib * 1024;  // in bytes
     size_t kernel_loops = output_size / (STRIDE ? STRIDE : 1) * test->loop_mul;
 
